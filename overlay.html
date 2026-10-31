@@ -1,0 +1,245 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:'Fell';src:url('fonts5/im-fell-english-v14-latin-regular.ttf');}
+@font-face{font-family:'Fell';font-style:italic;src:url('fonts5/im-fell-english-v14-latin-italic.ttf');}
+@font-face{font-family:'Elite';src:url('fonts5/special-elite-v20-latin-regular.ttf');}
+html,body{margin:0;width:1280px;height:720px;overflow:hidden;background:transparent;}
+canvas{display:block;}
+</style></head><body><canvas id="c" width="1280" height="720"></canvas><script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=1280,H=720;
+let TL={dur:187.587};
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const INK='#ece0c4',INKDIM='#b3a583',RED='#d84a2e',PAPER='#f0e6cc',GOLD='#d8a94e',GREEN='#7fae5a';
+const PANEL={x:36,y:22,w:1208,h:266};
+const rng=mulberry(20261031);
+// prerendered hand-drawn panel
+const pc=document.createElement('canvas');pc.width=W;pc.height=H;
+{const p=pc.getContext('2d');
+ // panel fill
+ p.fillStyle='rgba(14,11,7,0.80)';
+ p.fillRect(PANEL.x,PANEL.y,PANEL.w,PANEL.h);
+ // wobble border
+ function wob(x0,y0,x1,y1,seed){const r=mulberry(seed);p.beginPath();const n=Math.max(4,Math.floor(Math.hypot(x1-x0,y1-y0)/40));
+  for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n+(r()-0.5)*3.4,y=y0+(y1-y0)*i/n+(r()-0.5)*3.4;i?p.lineTo(x,y):p.moveTo(x,y)}p.stroke();}
+ p.strokeStyle='rgba(236,224,196,0.9)';p.lineWidth=2;
+ wob(PANEL.x,PANEL.y,PANEL.x+PANEL.w,PANEL.y,11);wob(PANEL.x+PANEL.w,PANEL.y,PANEL.x+PANEL.w,PANEL.y+PANEL.h,22);
+ wob(PANEL.x+PANEL.w,PANEL.y+PANEL.h,PANEL.x,PANEL.y+PANEL.h,33);wob(PANEL.x,PANEL.y+PANEL.h,PANEL.x,PANEL.y,44);
+ // corner ticks
+ p.lineWidth=2.4;[[PANEL.x,PANEL.y,1,1],[PANEL.x+PANEL.w,PANEL.y,-1,1],[PANEL.x,PANEL.y+PANEL.h,1,-1],[PANEL.x+PANEL.w,PANEL.y+PANEL.h,-1,-1]].forEach(([x,y,dx,dy])=>{p.beginPath();p.moveTo(x+dx*16,y);p.lineTo(x,y);p.lineTo(x,y+dy*16);p.stroke();});
+ // tape
+ p.fillStyle='rgba(232,220,180,0.28)';
+ p.save();p.translate(PANEL.x+60,PANEL.y);p.rotate(-0.06);p.fillRect(-38,-9,76,18);p.restore();
+ p.save();p.translate(PANEL.x+PANEL.w-70,PANEL.y);p.rotate(0.05);p.fillRect(-38,-9,76,18);p.restore();
+ // header rule
+ p.strokeStyle='rgba(236,224,196,0.5)';p.lineWidth=1.2;wob(PANEL.x+16,PANEL.y+44,PANEL.x+PANEL.w-16,PANEL.y+44,55);
+ // faint paper grain inside panel
+ const id=p.getImageData(PANEL.x,PANEL.y,PANEL.w,PANEL.h);const r2=mulberry(777);
+ for(let i=0;i<id.data.length;i+=4){if(id.data[i+3]>0){const n=(r2()-0.5)*10;id.data[i]+=n;id.data[i+1]+=n;id.data[i+2]+=n;}}
+ p.putImageData(id,PANEL.x,PANEL.y);
+}
+function ease(t){return 1-Math.pow(1-Math.min(Math.max(t,0),1),3)}
+function pop(t,t0,d){return ease((t-t0)/(d||0.35))}
+// draw helpers (all inside panel content area: y 74..280)
+function txt(s,x,y,o){o=o||{};ctx.save();ctx.globalAlpha=o.a==null?1:o.a;
+ ctx.font=(o.it?'italic ':'')+(o.w||'')+' '+(o.s||22)+'px '+(o.f||'Fell');
+ ctx.fillStyle=o.c||INK;ctx.textAlign=o.al||'left';ctx.textBaseline='middle';
+ if(o.ls){const cvs=ctx;let cx=o.al==='center'?x-measureLS(s,o)/2:x;for(const ch of s){cvs.fillText(ch,cx,y);cx+=cvs.measureText(ch).width+o.ls;}ctx.restore();return;}
+ ctx.fillText(s,x,y);ctx.restore();}
+function measureLS(s,o){ctx.save();ctx.font=(o.it?'italic ':'')+(o.w||'')+' '+(o.s||22)+'px '+(o.f||'Fell');let w=0;for(const ch of s)w+=ctx.measureText(ch).width+o.ls;ctx.restore();return w-o.ls;}
+function zoomTxt(s,x,y,t,t0,o){o=o||{};const k=pop(t,t0,o.d||0.32);if(k<=0)return;ctx.save();ctx.translate(x,y);ctx.scale(1.25-0.25*k,1.25-0.25*k);ctx.rotate((o.rot||0)*(1-k));ctx.globalAlpha=k;
+ ctx.font=(o.it?'italic ':'')+(o.w||'')+' '+(o.s||40)+'px '+(o.f||'Fell');ctx.fillStyle=o.c||INK;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s,0,0);ctx.restore();}
+function line(x0,y0,x1,y1,t,t0,d,o){o=o||{};const k=pop(t,t0,d||0.4);if(k<=0)return;ctx.save();ctx.globalAlpha=o.a==null?1:o.a;ctx.strokeStyle=o.c||INK;ctx.lineWidth=o.lw||2;
+ ctx.setLineDash(o.dash||[]);ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+(x1-x0)*k,y0+(y1-y0)*k);ctx.stroke();ctx.restore();}
+function arrow(x0,y0,x1,y1,t,t0,o){o=o||{};const k=pop(t,t0,o.d||0.45);if(k<=0)return;ctx.save();ctx.strokeStyle=o.c||RED;ctx.fillStyle=o.c||RED;ctx.lineWidth=o.lw||2.6;
+ const ex=x0+(x1-x0)*k,ey=y0+(y1-y0)*k;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(ex,ey);ctx.stroke();
+ if(k>0.85){const a=Math.atan2(y1-y0,x1-x0);ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex-12*Math.cos(a-0.45),ey-12*Math.sin(a-0.45));ctx.lineTo(ex-12*Math.cos(a+0.45),ey-12*Math.sin(a+0.45));ctx.closePath();ctx.fill();}ctx.restore();}
+function box(x,y,w,h,t,t0,o){o=o||{};const k=pop(t,t0,o.d||0.3);if(k<=0)return null;ctx.save();ctx.globalAlpha=k;
+ ctx.strokeStyle=o.c||INK;ctx.lineWidth=2;ctx.setLineDash(o.dash||[]);
+ const inset=(1-k)*10;ctx.strokeRect(x-inset,y-inset,w+2*inset,h+2*inset);
+ if(o.fill){ctx.fillStyle=o.fill;ctx.fillRect(x,y,w,h);}ctx.restore();return k;}
+function circ(x,y,r,t,t0,o){o=o||{};const k=pop(t,t0,o.d||0.3);if(k<=0)return;ctx.save();ctx.globalAlpha=k;ctx.strokeStyle=o.c||INK;ctx.lineWidth=o.lw||2;ctx.setLineDash(o.dash||[]);
+ ctx.beginPath();ctx.arc(x,y,Math.max(0.1,r*k),0,Math.PI*2);ctx.stroke();if(o.fill){ctx.fillStyle=o.fill;ctx.fill();}ctx.restore();}
+// ---- persistent chrome ----
+function chrome(t){
+ if(t<1.0)return;
+ const k=pop(t,1.0,0.5);
+ ctx.save();ctx.globalAlpha=k;ctx.drawImage(pc,0,0);ctx.restore();
+ // header
+ const hk=pop(t,1.15,0.4);
+ if(hk>0){txt('NOTAS DE CONVERSACIÓN',PANEL.x+26,PANEL.y+23,{s:17,f:'Elite',c:INKDIM,a:hk,ls:2});
+  const hw=measureLS('NOTAS DE CONVERSACIÓN',{s:17,f:'Elite',ls:2});
+  txt('FÁRMACOS & ANTIEDAD',PANEL.x+42+hw,PANEL.y+23,{s:17,f:'Elite',c:RED,a:hk,ls:2});
+  txt('n.º 1',PANEL.x+PANEL.w-30,PANEL.y+23,{s:16,f:'Elite',c:INKDIM,a:hk,al:'right'});}
+}
+const CY=182; // content vertical center
+// ---- scenes ----
+function s1(t){ // 1.0-14.5 fase 3
+ if(t<1.4||t>14.72)return;const k=pop(t,1.4,0.35)*(1-pop(t,14.3,0.35));if(k<=0)return;
+ zoomTxt('¿FÁRMACOS ANTIEDAD?',W/2,110,Math.max(t,1.4),1.4,{s:44,c:PAPER});
+ ctx.globalAlpha=k;
+ const y=196,bw=150,bh=58,gap=110,x0=W/2-(3*bw+2*gap)/2;
+ const ph=['FASE 1','FASE 2','FASE 3'],tt=[3.4,6.0,8.6];
+ for(let i=0;i<3;i++){const x=x0+i*(bw+gap);box(x,y,bw,bh,t,tt[i],{c:i===2?RED:INK,lw:i===2?3:2,fill:i===2?'rgba(216,74,46,0.14)':null});
+  const kk=pop(t,tt[i]+0.1,0.3);if(kk>0)txt(ph[i],x+bw/2,y+bh/2-6,{s:24,f:'Elite',c:i===2?RED:INK,al:'center',a:kk});
+  const kk2=pop(t,tt[i]+0.25,0.3);if(kk2>0&&i===2)txt('aquí estamos',x+bw/2,y+bh/2+18,{s:15,it:true,c:GOLD,al:'center',a:kk2});
+  if(i<2)arrow(x+bw+8,y+bh/2,x+bw+gap-8,y+bh/2,t,tt[i]+1.6,{});}
+ txt('droga en desarrollo · enfermedad pulmonar · efectos antiedad por marcadores biológicos',W/2,272,{s:18,it:true,c:INKDIM,al:'center',a:pop(t,11.2,0.4)});
+ ctx.globalAlpha=1;}
+function s2(t){ // 14.5-21.2 la famosa
+ if(t<14.5||t>21.32)return;const k=pop(t,14.5,0.3)*(1-pop(t,20.95,0.3));if(k<=0)return;
+ zoomTxt('2:00 AM',220,130,t,14.7,{s:46,f:'Elite',c:GOLD});
+ // clock doodle
+ circ(220,196,42,t,15.2,{c:GOLD,lw:2.5});line(220,196,220,166,t,15.7,0.3,{c:GOLD,lw:2.5});line(220,196,241,206,t,15.9,0.3,{c:GOLD,lw:2.5});
+ txt('anoche, leyendo papers',220,254,{s:17,it:true,c:INKDIM,al:'center',a:pop(t,16.2,0.4)});
+ txt('…sobre otra droga,',640,150,{s:34,c:INK,al:'center',a:pop(t,15.0,0.4)});
+ txt('muy famosa',640,196,{s:34,it:true,c:INK,al:'center',a:pop(t,16.4,0.4)});
+ txt('¿la has escuchado?',640,240,{s:24,c:INKDIM,al:'center',a:pop(t,17.6,0.4)});
+ zoomTxt('OZEMPIC',1000,178,t,19.0,{s:64,f:'Elite',c:RED,rot:-0.08,d:0.28});}
+function s3(t){ // 21.2-27.6 ficha ozempic
+ if(t<21.2||t>27.8)return;const k=pop(t,21.2,0.3)*(1-pop(t,27.4,0.3));if(k<=0)return;
+ zoomTxt('OZEMPIC',280,120,t,21.2,{s:52,f:'Elite',c:RED,rot:-0.06});
+ line(140,158,420,158,t,21.6,0.4,{c:'rgba(236,224,196,0.5)',lw:1.4});
+ const rows=[['nombre genérico','semaglutida',22.0],['clase','agonista GLP-1',22.9],['uso original','diabetes tipo 2',23.8],['famoso por','pérdida de peso',24.7]];
+ rows.forEach((r,i)=>{const y=188+i*26;txt(r[0],150,y,{s:17,f:'Elite',c:INKDIM,a:pop(t,r[2],0.3)});txt(r[1],400,y,{s:20,c:PAPER,a:pop(t,r[2]+0.12,0.3)});});
+ // GLP-1 receptor sketch right
+ const kx=pop(t,25.4,0.4);if(kx>0){ctx.save();ctx.globalAlpha=kx;circ(950,180,66,t,25.4,{c:INK,lw:2});circ(950,180,46,t,25.7,{c:RED,lw:2,dash:[6,5]});
+ txt('GLP-1',950,172,{s:26,f:'Elite',c:PAPER,al:'center',a:kx});txt('receptor',950,200,{s:15,it:true,c:INKDIM,al:'center',a:kx});ctx.restore();}}
+function s4(t){ // 27.6-34.6 novo nordisk
+ if(t<27.6||t>34.72)return;const k=pop(t,27.6,0.3)*(1-pop(t,34.4,0.3));if(k<=0)return;
+ zoomTxt('NOVO NORDISK',380,122,t,27.8,{s:44,f:'Elite',c:PAPER});
+ txt('la descubridora · Dinamarca',380,164,{s:20,it:true,c:GOLD,al:'center',a:pop(t,29.0,0.4)});
+ // abstract map: dashed graticule + dot
+ const mk=pop(t,29.6,0.5);if(mk>0){ctx.save();ctx.globalAlpha=mk;
+  circ(940,182,88,t,29.6,{c:INKDIM,lw:1.6,dash:[4,6]});
+  line(852,182,1028,182,t,30.0,0.5,{c:INKDIM,lw:1,dash:[4,6]});line(940,94,940,270,t,30.2,0.5,{c:INKDIM,lw:1,dash:[4,6]});
+  const dk=pop(t,30.8,0.3);if(dk>0){ctx.fillStyle=RED;ctx.beginPath();ctx.arc(956,140,7*dk,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle=RED;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(956,140,14*dk+3*Math.sin(t*4),0,Math.PI*2);ctx.stroke();}
+  txt('Copenhague ~55.7°N',940,258,{s:15,f:'Elite',c:INKDIM,al:'center',a:pop(t,31.4,0.4)});ctx.restore();}
+ txt('“algo así se llama la farmacéutica”',380,226,{s:18,it:true,c:INKDIM,al:'center',a:pop(t,32.2,0.4)});
+ txt('fundada 1923 · insulina desde 1923',380,254,{s:16,f:'Elite',c:INKDIM,al:'center',a:pop(t,33.2,0.4)});}
+function s5(t){ // 34.4-43.6 serendipia
+ if(t<34.4||t>43.72)return;const k=pop(t,34.4,0.3)*(1-pop(t,43.4,0.3));if(k<=0)return;
+ txt('SERENDIPIA FARMACOLÓGICA',W/2,100,{s:19,f:'Elite',c:GOLD,al:'center',a:pop(t,34.6,0.4),ls:2});
+ const y=170,bw=230,bh=84;
+ box(190,y,bw,bh,t,35.0,{});txt('DIABETES',190+bw/2,y+30,{s:26,f:'Elite',c:PAPER,al:'center',a:pop(t,35.2,0.3)});txt('objetivo original',190+bw/2,y+58,{s:16,it:true,c:INKDIM,al:'center',a:pop(t,35.5,0.3)});
+ arrow(430,y+bh/2,560,y+bh/2,t,37.2,{});
+ txt('efecto inesperado',495,y+bh/2-26,{s:15,it:true,c:RED,al:'center',a:pop(t,37.8,0.3)});
+ box(570,y,bw,bh,t,39.4,{c:RED,fill:'rgba(216,74,46,0.12)'});txt('PESO ↓',570+bw/2,y+30,{s:28,f:'Elite',c:RED,al:'center',a:pop(t,39.6,0.3)});txt('hallazgo en los ensayos',570+bw/2,y+58,{s:16,it:true,c:INKDIM,al:'center',a:pop(t,39.9,0.3)});
+ arrow(800,y+bh/2,930,y+bh/2,t,41.2,{});
+ box(940,y,150,bh,t,42.2,{c:GOLD,dash:[7,5]});txt('¿…?',940+75,y+30,{s:26,f:'Elite',c:GOLD,al:'center',a:pop(t,42.4,0.3)});txt('¿qué más hace?',940+75,y+58,{s:15,it:true,c:INKDIM,al:'center',a:pop(t,42.7,0.3)});
+ txt('la dosis hace el fármaco; la suerte hace el blockbuster',W/2,272,{s:17,it:true,c:INKDIM,al:'center',a:pop(t,43.0,0.3)});}
+function s6(t){ // 43.6-61.7 hollywood -20kg
+ if(t<43.6||t>61.9)return;const k=pop(t,43.6,0.3)*(1-pop(t,61.55,0.3));if(k<=0)return;
+ zoomTxt('HOLLYWOOD',300,116,t,44.2,{s:42,f:'Elite',c:PAPER});
+ txt('explosión · actores bajando de peso',300,158,{s:19,it:true,c:INKDIM,al:'center',a:pop(t,45.4,0.4)});
+ // sparkles
+ const sk=pop(t,44.6,0.5);if(sk>0){ctx.save();ctx.globalAlpha=sk;ctx.strokeStyle=GOLD;ctx.lineWidth=1.8;
+  [[150,200],[420,205],[180,235],[455,240],[300,225]].forEach((p,i)=>{const s=6+3*Math.sin(t*3+i*2);ctx.beginPath();ctx.moveTo(p[0]-s,p[1]);ctx.lineTo(p[0]+s,p[1]);ctx.moveTo(p[0],p[1]-s);ctx.lineTo(p[0],p[1]+s);ctx.stroke();});ctx.restore();}
+ // counter
+ const kk=pop(t,49.8,0.4);if(kk>0){const n=Math.round(20*ease(Math.min(Math.max((t-50.2)/5.0,0),1)));
+  ctx.save();ctx.globalAlpha=kk;zoomTxt('−'+n+' kg',880,150,Math.max(t,49.8),49.8,{s:88,f:'Elite',c:RED,d:0.4});ctx.restore();
+  txt('una amiga, en pocos meses',880,222,{s:20,it:true,c:PAPER,al:'center',a:pop(t,55.6,0.4)});
+  line(730,250,1030,250,t,56.2,0.4,{c:'rgba(236,224,196,0.4)',lw:1.2});
+  txt('anécdota personal · no es ensayo clínico',880,268,{s:14,f:'Elite',c:INKDIM,al:'center',a:pop(t,57.0,0.4)});}}
+function s7(t){ // 61.7-65.2 BRUTAL
+ if(t<61.7||t>65.3)return;
+ zoomTxt('BRUTAL',W/2,150,t,61.7,{s:76,f:'Elite',c:RED,d:0.24,rot:0.03});
+ zoomTxt('BRUTAL',W/2,216,t,62.6,{s:46,f:'Elite',c:PAPER,d:0.22,rot:-0.04});
+ zoomTxt('muy fuerte',W/2,262,t,63.6,{s:30,it:true,c:GOLD,d:0.22});}
+function s8(t){ // 65.2-82.0 organos + hipotesis
+ if(t<65.2||t>82.12)return;const k=pop(t,65.2,0.3)*(1-pop(t,81.8,0.3));if(k<=0)return;
+ txt('LOS GUIÑOS EN LOS CONSULTORIOS',W/2,98,{s:19,f:'Elite',c:GOLD,al:'center',a:pop(t,65.4,0.4),ls:2});
+ const orgs=[['CORAZÓN',66.6,(x,y)=>{ctx.beginPath();ctx.moveTo(x,y+14);ctx.bezierCurveTo(x-26,y-8,x-13,y-26,x,y-10);ctx.bezierCurveTo(x+13,y-26,x+26,y-8,x,y+14);ctx.stroke();}],
+  ['HÍGADO',69.6,(x,y)=>{ctx.beginPath();ctx.ellipse(x,y-2,24,15,-0.15,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y-16);ctx.quadraticCurveTo(x+2,y+2,x-4,y+13);ctx.stroke();}],
+  ['RIÑONES',72.6,(x,y)=>{ctx.beginPath();ctx.ellipse(x-11,y,10,16,0.2,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(x+11,y,10,16,-0.2,0,Math.PI*2);ctx.stroke();}]];
+ orgs.forEach((o,i)=>{const x=360+i*280,y=168;const kk=pop(t,o[1],0.4);if(kk<=0)return;
+  ctx.save();ctx.globalAlpha=kk;ctx.strokeStyle=PAPER;ctx.lineWidth=2.4;o[2](x,y);ctx.restore();
+  txt(o[0],x,212,{s:20,f:'Elite',c:PAPER,al:'center',a:kk});
+  const ck=pop(t,o[1]+0.7,0.25);if(ck>0){ctx.save();ctx.globalAlpha=ck;ctx.strokeStyle=GREEN;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+26,y+16);ctx.lineTo(x+34,y+25);ctx.lineTo(x+50,y+6);ctx.stroke();ctx.restore();}});
+ txt('mejor función reportada en pacientes',W/2,242,{s:17,it:true,c:INKDIM,al:'center',a:pop(t,74.4,0.4)});
+ const hk=pop(t,76.8,0.4);if(hk>0){txt('no lo explica solo el peso ni el azúcar  →',430,268,{s:19,it:true,c:PAPER,al:'center',a:hk});
+  zoomTxt('¿ANTIEDAD?',760,268,Math.max(t,78.0),78.0,{s:22,f:'Elite',c:RED,d:0.26});
+  zoomTxt('¿ANTIINFLAMATORIO?',1010,268,Math.max(t,79.2),79.2,{s:22,f:'Elite',c:RED,d:0.26});}}
+function s9(t){ // 82.0-97.2 VS lilly
+ if(t<82.0||t>97.4)return;const k=pop(t,82.0,0.3)*(1-pop(t,97.05,0.3));if(k<=0)return;
+ txt('CONGRESO MUNDIAL · ESTA SEMANA',W/2,98,{s:19,f:'Elite',c:GOLD,al:'center',a:pop(t,82.2,0.4),ls:2});
+ box(200,126,340,120,t,83.0,{});txt('NOVO NORDISK',370,152,{s:24,f:'Elite',c:PAPER,al:'center',a:pop(t,83.2,0.3)});txt('Ozempic · el original',370,182,{s:17,it:true,c:INKDIM,al:'center',a:pop(t,83.6,0.3)});txt('fase 3 · antiedad (otra molécula)',370,210,{s:15,it:true,c:INKDIM,al:'center',a:pop(t,84.0,0.3)});
+ box(740,126,340,120,t,86.0,{c:RED,fill:'rgba(216,74,46,0.10)'});txt('ELI LILLY',910,152,{s:24,f:'Elite',c:RED,al:'center',a:pop(t,86.2,0.3)});txt('la competidora · molécula mejorada',910,182,{s:17,it:true,c:INKDIM,al:'center',a:pop(t,86.6,0.3)});txt('fase 2 ✓ → fase 3 ▶',910,210,{s:17,f:'Elite',c:GOLD,al:'center',a:pop(t,87.0,0.3)});
+ // bolt
+ const bk=pop(t,85.0,0.3);if(bk>0){ctx.save();ctx.globalAlpha=bk;ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(648,140);ctx.lineTo(628,182);ctx.lineTo(644,182);ctx.lineTo(632,222);ctx.lineTo(660,176);ctx.lineTo(644,176);ctx.lineTo(658,140);ctx.closePath();ctx.fill();ctx.restore();}
+ zoomTxt('MARCADORES EPIGENÉTICOS',W/2,268,Math.max(t,90.0),90.0,{s:26,f:'Elite',c:RED,d:0.3});
+ txt('resultados “tremendos” en antiedad',W/2,244,{s:16,it:true,c:INKDIM,al:'center',a:pop(t,89.0,0.4)*(1-pop(t,90.2,0.2))});}
+function s10(t){ // 97.2-106.2 definicion
+ if(t<97.2||t>106.4)return;const k=pop(t,97.2,0.3)*(1-pop(t,106.1,0.3));if(k<=0)return;
+ txt('epi·ge·né·ti·co',W/2,118,{s:40,f:'Elite',c:PAPER,al:'center',a:pop(t,97.6,0.4)});
+ txt('adj. — griego epi-, “sobre, encima de” + génesis',W/2,156,{s:18,it:true,c:GOLD,al:'center',a:pop(t,99.0,0.4)});
+ txt('lo que regula QUÉ genes se expresan, CUÁNDO y DÓNDE,',W/2,196,{s:22,c:INK,al:'center',a:pop(t,100.2,0.4)});
+ txt('sin cambiar ni una letra del ADN',W/2,226,{s:22,it:true,c:INK,al:'center',a:pop(t,101.6,0.4)});
+ txt('— y puede transmitirse: factor transgeneracional —',W/2,258,{s:17,f:'Elite',c:INKDIM,al:'center',a:pop(t,103.0,0.4)});}
+function s11(t){ // 106.2-123.2 ADN switches
+ if(t<106.2||t>123.4)return;const k=pop(t,106.2,0.3)*(1-pop(t,123.05,0.3));if(k<=0)return;
+ // DNA: two sine strands + rungs, 4 gene blocks
+ const dk=pop(t,106.6,0.6);if(dk>0){ctx.save();ctx.globalAlpha=dk;ctx.strokeStyle=INK;ctx.lineWidth=2;
+  ctx.beginPath();for(let x=140;x<=760;x+=6){ctx.lineTo(x,150+17*Math.sin((x-140)/34));}ctx.stroke();
+  ctx.beginPath();for(let x=140;x<=760;x+=6){ctx.lineTo(x,150+17*Math.sin((x-140)/34+Math.PI));}ctx.stroke();
+  ctx.strokeStyle='rgba(236,224,196,0.4)';ctx.lineWidth=1.2;
+  for(let x=157;x<=750;x+=34){ctx.beginPath();ctx.moveTo(x,150+17*Math.sin((x-140)/34));ctx.lineTo(x,150+17*Math.sin((x-140)/34+Math.PI));ctx.stroke();}ctx.restore();}
+ const genes=[['GEN A',1,107.6],['GEN B',0,109.6],['GEN C',1,111.6],['GEN D',0,113.6]];
+ genes.forEach((g,i)=>{const x=220+i*140,y=216;const kk=pop(t,g[2],0.4);if(kk<=0)return;
+  box(x-52,y-20,104,40,t,g[2],{c:g[1]?GREEN:RED,fill:g[1]?'rgba(127,174,90,0.10)':'rgba(216,74,46,0.10)'});
+  txt(g[0],x,y-2,{s:18,f:'Elite',c:g[1]?GREEN:RED,al:'center',a:kk});
+  txt(g[1]?'ON':'OFF',x,y+15,{s:13,f:'Elite',c:g[1]?GREEN:RED,al:'center',a:kk});});
+ txt('la cadena guarda todo; la epigenética decide…',W/2,262,{s:19,it:true,c:INKDIM,al:'center',a:pop(t,115.4,0.4)});
+ const tags=[['qué se expresa',116.6,300],['cuándo',118.2,520],['en qué tejido',119.8,700],['en qué órgano',121.2,920]];
+ tags.forEach(g=>{const kk=pop(t,g[1],0.3);if(kk>0){box(g[2]-78,86,156,30,t,g[1],{c:GOLD,dash:[5,4]});txt(g[0],g[2],102,{s:16,f:'Elite',c:GOLD,al:'center',a:kk});}});}
+function s12(t){ // 123.2-148.2 metilo
+ if(t<123.2||t>148.4)return;const k=pop(t,123.2,0.3)*(1-pop(t,148.1,0.3));if(k<=0)return;
+ txt('EL GRUPO METILO',W/2,98,{s:20,f:'Elite',c:GOLD,al:'center',a:pop(t,123.4,0.4),ls:2});
+ // CH3 molecule
+ const cx=420,cyy=178;
+ circ(cx,cyy,34,t,124.2,{c:PAPER,lw:3,fill:'rgba(240,230,204,0.08)'});
+ txt('C',cx,cyy+1,{s:34,f:'Elite',c:PAPER,al:'center',a:pop(t,124.4,0.3)});
+ const hs=[[-96,-64],[0,90],[96,-64]];
+ hs.forEach((h,i)=>{const tt=125.4+i*0.9;arrow(cx,cyy,cx+h[0],cyy+h[1],t,tt,{c:INKDIM,lw:2.4,d:0.3});
+  circ(cx+h[0],cyy+h[1],21,t,tt+0.25,{c:INK,lw:2.2});txt('H',cx+h[0],cyy+h[1]+1,{s:22,f:'Elite',c:INK,al:'center',a:pop(t,tt+0.35,0.3)});});
+ // formula + role (right column)
+ zoomTxt('CH₃',860,140,t,131.0,{s:64,f:'Elite',c:RED});
+ txt('= 1 carbono + 3 hidrógenos',860,186,{s:20,it:true,c:PAPER,al:'center',a:pop(t,132.2,0.4)});
+ txt('el interruptor químico',860,216,{s:19,it:true,c:INKDIM,al:'center',a:pop(t,133.4,0.4)});
+ txt('marcador epigenético por excelencia',860,246,{s:17,f:'Elite',c:INKDIM,al:'center',a:pop(t,134.6,0.4)});
+ txt('“para que la sepas rápido”',420,278,{s:15,it:true,c:INKDIM,al:'center',a:pop(t,135.0,0.4)});}
+function s13(t){ // 148.2-155.2 citosina OFF
+ if(t<148.2||t>155.5)return;const k=pop(t,148.2,0.3)*(1-pop(t,155.2,0.3));if(k<=0)return;
+ const L=['A','C','G','T'];
+ L.forEach((l,i)=>{const x=380+i*110,y=150;const isC=l==='C';
+  box(x-34,y-34,68,68,t,148.6+i*0.5,{c:isC?RED:INK,fill:isC?'rgba(216,74,46,0.12)':null});
+  txt(l,x,y+2,{s:34,f:'Elite',c:isC?RED:INK,al:'center',a:pop(t,148.7+i*0.5,0.3)});});
+ txt('las cuatro letras del ADN',W/2,212,{s:18,it:true,c:INKDIM,al:'center',a:pop(t,150.6,0.4)});
+ // CH3 docks onto C
+ const dk=pop(t,151.2,0.45);if(dk>0){const x=490,y=150-70*(1-dk);
+  circ(x,y,17,t,151.2,{c:GOLD,lw:2.2,fill:'rgba(216,169,78,0.15)'});txt('CH₃',x,y+1,{s:15,f:'Elite',c:GOLD,al:'center',a:dk});
+  if(dk>0.95){line(x,y+17,x,116,t,152.4,0.2,{c:GOLD,lw:2});}}
+ zoomTxt('GEN: APAGADO',W/2,256,Math.max(t,153.0),153.0,{s:30,f:'Elite',c:RED,d:0.3});
+ txt('la metilación de la citosina silencia la expresión',W/2,232,{s:16,it:true,c:INKDIM,al:'center',a:pop(t,152.4,0.4)*(1-pop(t,153.4,0.2))});}
+function s14(t){ // 155.2-186 recap + cierre
+ if(t<155.2||t>187.587)return;const k=pop(t,155.2,0.4)*(1-pop(t,183.6,1.6));if(k<=0)return;
+ txt('AHÍ NOS QUEDAMOS',W/2,104,{s:24,f:'Elite',c:PAPER,al:'center',a:pop(t,168.0,0.5),ls:2});
+ const rows=[['Ozempic (semaglutida)','GLP-1 · Novo Nordisk · Dinamarca',156.0],
+  ['efectos más allá del peso','corazón · hígado · riñones',158.2],
+  ['la pista','metilación → genes que se apagan y se encienden',160.4],
+  ['la pregunta abierta','¿fármacos antiedad de verdad?',162.6]];
+ rows.forEach(r=>{const kk=pop(t,r[2],0.4);if(kk<=0)return;
+  txt('◆',300,140+rows.indexOf(r)*32,{s:14,c:RED,al:'right',a:kk});
+  txt(r[0],320,140+rows.indexOf(r)*32,{s:20,f:'Elite',c:PAPER,a:kk});
+  txt(r[1],720,140+rows.indexOf(r)*32,{s:18,it:true,c:INKDIM,a:kk});});}
+const SCENES=[s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14];
+window.__setTL=function(tl){TL=tl;};
+window.__renderAtTime=function(t){
+ ctx.clearRect(0,0,W,H);
+ const fadeAll=1-pop(t,184.5,2.6); // final fade of chrome too
+ chrome(t);
+ if(t>184.5){ctx.save();ctx.globalAlpha=fadeAll;ctx.drawImage(pc,0,0);ctx.restore();}
+ for(const s of SCENES)s(t);
+};
+document.fonts.ready.then(()=>{window.__ready=true;window.__renderAtTime(0);});
+</script></body></html>

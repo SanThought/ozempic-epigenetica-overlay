@@ -1,0 +1,22 @@
+{
+  "dur": 187.587,
+  "fps": 24,
+  "fuente": "src.mp4 (854x480, 23.976fps) escalada a 1280x720; overlay transparente renderizado a 24fps y compuesto con ffmpeg overlay",
+  "escenas": [
+    {"t": [1.0, 14.5], "id": "titulo-fase3", "beat": "¿farmacéuticas? droga fase 3, pulmonar, marcadores antiedad"},
+    {"t": [14.5, 21.2], "id": "2am-ozempic", "beat": "anoche 2am leyendo; reveal OZEMPIC"},
+    {"t": [21.2, 27.6], "id": "ficha-ozempic", "beat": "ficha: semaglutida, GLP-1, diabetes, peso"},
+    {"t": [27.6, 34.4], "id": "novo-nordisk", "beat": "empresa en Dinamarca, Novo Nordisk"},
+    {"t": [34.4, 43.6], "id": "serendipia", "beat": "diabetes -> efecto inesperado: peso"},
+    {"t": [43.6, 61.7], "id": "hollywood-20kg", "beat": "explosión Hollywood; amiga -20kg (contador animado)"},
+    {"t": [61.7, 65.2], "id": "brutal", "beat": "es brutal, brutal, muy fuerte (zoom cinético)"},
+    {"t": [65.2, 82.0], "id": "organos-hipotesis", "beat": "corazón/hígado/riñones mejoran; no lo explica peso ni azúcar; ¿antiedad? ¿antiinflamatorio?"},
+    {"t": [82.0, 97.2], "id": "vs-lilly", "beat": "congreso mundial; Eli Lilly molécula mejorada fase 2->3; marcadores epigenéticos"},
+    {"t": [97.2, 106.2], "id": "def-epigenetico", "beat": "¿qué entiendes por epigenético? definición"},
+    {"t": [106.2, 123.2], "id": "adn-switches", "beat": "cadena ADN; qué/cuándo/dónde se expresa"},
+    {"t": [123.2, 148.2], "id": "grupo-metilo", "beat": "grupo metilo = 1 carbono + 3 hidrógenos"},
+    {"t": [148.2, 155.2], "id": "citosina-off", "beat": "metilo se une a citosina (A/C/G/T) y APAGA el gen"},
+    {"t": [155.2, 187.587], "id": "recap-cierre", "beat": "recap + 'Ahí nos quedamos'; fade 184.5-187.1"}
+  ],
+  "timing_fuente": "ffmpeg silencedetect noise=-35dB d=0.45 sobre el audio original; bloques de frase mapeados ordinalmente a la transcripción; afinado con d=0.28 en 34-82s"
+}
